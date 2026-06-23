@@ -88,6 +88,8 @@ jobs:
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
 
+          git fetch --all
+
           # Make a new branch from the default one
           # The default branch is the ultimate target of the PR, not the current one
           # For _typical_ workflow execution this is the same
