@@ -88,7 +88,7 @@ jobs:
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
 
-          git fetch --all
+          git fetch origin refs/heads/master:refs/remotes/origin/master
 
           # Make a new branch from the default one
           # The default branch is the ultimate target of the PR, not the current one
