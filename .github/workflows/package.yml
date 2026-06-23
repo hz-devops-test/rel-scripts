@@ -83,15 +83,13 @@ jobs:
         with:
           hz-version: ${{ inputs.VERSION }}
 
+      - name: list brnaches
+        run: git branch -a
+
       - name: Create PR for changes
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-
-          git fetch origin refs/heads/master:refs/remotes/origin/master
-          git fetch origin
-          git fetch upstream
-          git fetch --all
 
 
           # Make a new branch from the default one
