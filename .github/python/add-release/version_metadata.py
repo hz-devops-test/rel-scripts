@@ -34,35 +34,33 @@ class DownloadUrl:
         """Fetch and cache the artifact size without _actually_ downloading it."""
         logging.debug("Getting size of %s", url)
 
-        username = os.getenv("RELEASE_REPO_USER")
-        password = os.getenv("RELEASE_REPO_TOKEN")
+        parsed = urlparse(url)
 
-        auth = (
-            HTTPBasicAuth(username, password)
-            if urlparse(url).hostname == "repository.hazelcast.com" and username and password
-            else None
-        )
-        headers = (
-            {"Authorization": f"token {_github_token()}"}
-            if urlparse(url).hostname == "github.com" and _github_token()
-            else None
-        )
+        # 1. JFrog Artifactory
+        if parsed.hostname == "repository.hazelcast.com":
+            username = os.getenv("RELEASE_REPO_USER")
+            password = os.getenv("RELEASE_REPO_TOKEN")
+            auth = HTTPBasicAuth(username, password) if username and password else None
 
-        with requests.get(
-            url,
-            allow_redirects=True,
-            auth=auth,
-            headers=headers,
-            stream=True,
-        ) as response:
-            response.raise_for_status()
+            with requests.get(url, allow_redirects=True, auth=auth, stream=True) as response:
+                response.raise_for_status()
+                content_length = response.headers.get("Content-Length")
+                if content_length:
+                    return naturalsize(int(content_length), format="%.0f")
 
-            content_length = response.headers.get("Content-Length")
+        # 2. GitHub Releases (API asset download endpoint)
+        elif parsed.hostname == "github.com":
+            # Extract asset name from URL (e.g. hazelcast-6.0.0.zip)
+            filename = url.rsplit("/", 1)[-1]
+            
+            with _github_client() as gh:
+                # Find asset size directly from PyGithub metadata in 1 line
+                for release in gh.get_repo("hz-devops-test/hazelcast").get_releases():
+                    for asset in release.get_assets():
+                        if asset.name == filename:
+                            return naturalsize(asset.size, format="%.0f")
 
-            if content_length:
-                return naturalsize(int(content_length), format="%.0f")
-
-            raise Exception(f"{url} did not return a size")
+        raise Exception(f"{url} did not return a size")
 
     @property
     def size(self) -> str:
