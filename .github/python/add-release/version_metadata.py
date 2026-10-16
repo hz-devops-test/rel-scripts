@@ -19,12 +19,13 @@ def _github_token() -> str | None:
 def _github_client() -> Github:
     return Github(auth=Auth.Token(_github_token()))
 
-def rebuild_auth(self, prepared_request, response):
-    super().rebuild_auth(prepared_request, response)
-    
-    hostname = urlparse(prepared_request.url).hostname or ""
-    if hostname.endswith(".amazonaws.com"):
-        prepared_request.headers.pop("Authorization", None)
+class _RedirectSession(requests.Session):
+    def rebuild_auth(self, prepared_request, response):
+        super().rebuild_auth(prepared_request, response)
+        
+        hostname = urlparse(prepared_request.url).hostname or ""
+        if hostname.endswith(".amazonaws.com"):
+            prepared_request.headers.pop("Authorization", None)
 
 
 @dataclass
