@@ -19,6 +19,8 @@ def _github_token() -> str | None:
 def _github_client() -> Github:
     return Github(auth=Auth.Token(_github_token()))
 
+
+@dataclass
 class DownloadUrl:
     """A download URL with lazily computed, human-friendly size."""
 
