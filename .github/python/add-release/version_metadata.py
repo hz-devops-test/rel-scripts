@@ -2,7 +2,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from dataclasses import InitVar, dataclass, field
-from posixpath import dirname
+from posixpath import basename, dirname
 from urllib.parse import urlparse
 
 import requests
@@ -47,13 +47,21 @@ class DownloadUrl:
                 if content_length:
                     return naturalsize(int(content_length), format="%.0f")
         else:
-            filename = url.rsplit("/", 1)[-1]
+            filename = basename(parsed.path)
+            repo_full_name = f"{os.getenv('GITHUB_REPOSITORY_OWNER')}/rel-scripts"
 
             with _github_client() as gh:
-                for release in gh.get_repo("hz-devops-test/hazelcast").get_releases():
-                    for asset in release.get_assets():
-                        if asset.name == filename:
-                            return naturalsize(asset.size, format="%.0f")
+                repo = gh.get_repo(repo_full_name)
+                asset = next(
+                    (
+                        asset
+                        for release in repo.get_releases() if release.draft
+                        for asset in release.get_assets() if asset.name == filename
+                    ),
+                    None,
+                )
+                if asset:
+                    return naturalsize(asset.size, format="%.0f")
 
         raise Exception(f"{url} did not return a size")
 
@@ -156,7 +164,7 @@ class OSVersionMetadata(VersionMetadata):
                 # have to iterate as get_release(releasename) doesn't find drafts
                 releases = repo.get_releases()
                 release = next(
-                    release for release in releases if release.name == release_name
+                    release for release in releases if release.name == release_name and release.draft
                 )
 
                 asset = next(iter(release.get_assets()))
