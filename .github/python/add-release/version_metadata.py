@@ -19,17 +19,6 @@ def _github_token() -> str | None:
 def _github_client() -> Github:
     return Github(auth=Auth.Token(_github_token()))
 
-
-@dataclass
-class DownloadUrl:
-    """A download URL with lazily computed, human-friendly size."""
-
-    _live_base_url: str
-    _preprod_base_url: str
-    _suffix: str
-    _size: str = field(default=None, init=False)
-
-    @staticmethod
 class DownloadUrl:
     """A download URL with lazily computed, human-friendly size."""
 
