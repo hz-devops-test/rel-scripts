@@ -48,14 +48,14 @@ class DownloadUrl:
                     return naturalsize(int(content_length), format="%.0f")
         else:
             filename = basename(parsed.path)
-            repo_full_name = f"{os.getenv('GITHUB_REPOSITORY_OWNER')}/rel-scripts"
+            repo_full_name = f"{os.getenv('GITHUB_REPOSITORY_OWNER')}/hazelcast"
 
             with _github_client() as gh:
                 repo = gh.get_repo(repo_full_name)
                 asset = next(
                     (
                         asset
-                        for release in repo.get_releases() if release.draft
+                        for release in repo.get_releases()
                         for asset in release.get_assets() if asset.name == filename
                     ),
                     None,
@@ -164,7 +164,7 @@ class OSVersionMetadata(VersionMetadata):
                 # have to iterate as get_release(releasename) doesn't find drafts
                 releases = repo.get_releases()
                 release = next(
-                    release for release in releases if release.name == release_name and release.draft
+                    release for release in releases if release.name == release_name
                 )
 
                 asset = next(iter(release.get_assets()))
