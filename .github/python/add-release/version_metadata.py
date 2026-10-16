@@ -19,7 +19,14 @@ def _github_token() -> str | None:
 def _github_client() -> Github:
     return Github(auth=Auth.Token(_github_token()))
 
+class _RedirectSession(requests.Session):
+    """Preserves Authorization headers when following cross-domain redirects (e.g., github.com -> AWS S3)."""
 
+    def rebuild_auth(self, prepared_request, response):
+        super().rebuild_auth(prepared_request, response)
+        if "Authorization" in self.headers and "Authorization" not in prepared_request.headers:
+            prepared_request.headers["Authorization"] = self.headers["Authorization"]
+            
 @dataclass
 class DownloadUrl:
     """A download URL with lazily computed, human-friendly size."""
@@ -34,27 +41,16 @@ class DownloadUrl:
         """Fetch and cache the artifact size without _actually_ downloading it."""
         logging.debug("Getting size of %s", url)
 
-        username = os.getenv("RELEASE_REPO_USER")
-        password = os.getenv("RELEASE_REPO_TOKEN")
+        session = _RedirectSession()
 
-        auth = (
-            HTTPBasicAuth(username, password)
-            if urlparse(url).hostname == "repository.hazelcast.com"
-            and username
-            and password
-            else None
-        )
-        headers = (
-            {"Authorization": f"Bearer {_github_token()}"}
-            if urlparse(url).hostname == "github.com" and _github_token()
-            else None
-        )
+        if urlparse(url).hostname == "repository.hazelcast.com":
+            session.auth = HTTPBasicAuth(os.getenv("RELEASE_REPO_USER"), os.getenv("RELEASE_REPO_TOKEN"))
+        elif urlparse(url).hostname == "github.com" and _github_token():
+            session.headers["Authorization"] = f"Bearer {_github_token()}"
 
-        with requests.get(
+        with session.get(
             url,
             allow_redirects=True,
-            auth=auth,
-            headers=headers,
             stream=True,
         ) as response:
             response.raise_for_status()
