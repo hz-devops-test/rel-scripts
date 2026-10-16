@@ -19,14 +19,17 @@ def _github_token() -> str | None:
 def _github_client() -> Github:
     return Github(auth=Auth.Token(_github_token()))
 
+Python
 class _RedirectSession(requests.Session):
-    """Preserves Authorization headers when following cross-domain redirects (e.g., github.com -> AWS S3)."""
+    """Handles cross-domain redirects by stripping Authorization header when redirected to S3."""
 
     def rebuild_auth(self, prepared_request, response):
         super().rebuild_auth(prepared_request, response)
-        if "Authorization" in self.headers and "Authorization" not in prepared_request.headers:
-            prepared_request.headers["Authorization"] = self.headers["Authorization"]
-            
+        # S3 pre-signed URLs fail if an Authorization header is attached
+        if urlparse(prepared_request.url).hostname != "github.com":
+            prepared_request.headers.pop("Authorization", None)
+
+
 @dataclass
 class DownloadUrl:
     """A download URL with lazily computed, human-friendly size."""
@@ -44,7 +47,10 @@ class DownloadUrl:
         session = _RedirectSession()
 
         if urlparse(url).hostname == "repository.hazelcast.com":
-            session.auth = HTTPBasicAuth(os.getenv("RELEASE_REPO_USER"), os.getenv("RELEASE_REPO_TOKEN"))
+            session.auth = HTTPBasicAuth(
+                os.getenv("RELEASE_REPO_USER"),
+                os.getenv("RELEASE_REPO_TOKEN")
+            )
         elif urlparse(url).hostname == "github.com" and _github_token():
             session.headers["Authorization"] = f"Bearer {_github_token()}"
 
