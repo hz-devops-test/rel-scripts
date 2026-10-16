@@ -19,16 +19,17 @@ def _github_token() -> str | None:
 def _github_client() -> Github:
     return Github(auth=Auth.Token(_github_token()))
 
-class _RedirectSession(requests.Session):
-    def rebuild_auth(self, prepared_request, response):
-        super().rebuild_auth(prepared_request, response)
-        hostname = urlparse(prepared_request.url).hostname or ""
-
-        if hostname.endswith(".amazonaws.com"):
-            prepared_request.headers.pop("Authorization", None)
-
 
 @dataclass
+class DownloadUrl:
+    """A download URL with lazily computed, human-friendly size."""
+
+    _live_base_url: str
+    _preprod_base_url: str
+    _suffix: str
+    _size: str = field(default=None, init=False)
+
+    @staticmethod
 class DownloadUrl:
     """A download URL with lazily computed, human-friendly size."""
 
@@ -42,19 +43,25 @@ class DownloadUrl:
         """Fetch and cache the artifact size without _actually_ downloading it."""
         logging.debug("Getting size of %s", url)
 
-        session = _RedirectSession()
+        username = os.getenv("RELEASE_REPO_USER")
+        password = os.getenv("RELEASE_REPO_TOKEN")
 
-        if urlparse(url).hostname == "repository.hazelcast.com":
-            session.auth = HTTPBasicAuth(
-                os.getenv("RELEASE_REPO_USER"),
-                os.getenv("RELEASE_REPO_TOKEN")
-            )
-        elif urlparse(url).hostname == "github.com" and _github_token():
-            session.headers["Authorization"] = f"Bearer {_github_token()}"
+        auth = (
+            HTTPBasicAuth(username, password)
+            if urlparse(url).hostname == "repository.hazelcast.com" and username and password
+            else None
+        )
+        headers = (
+            {"Authorization": f"token {_github_token()}"}
+            if urlparse(url).hostname == "github.com" and _github_token()
+            else None
+        )
 
-        with session.get(
+        with requests.get(
             url,
             allow_redirects=True,
+            auth=auth,
+            headers=headers,
             stream=True,
         ) as response:
             response.raise_for_status()
