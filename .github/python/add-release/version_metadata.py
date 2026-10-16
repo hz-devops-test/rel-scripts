@@ -34,19 +34,23 @@ class DownloadUrl:
         """Fetch and cache the artifact size without _actually_ downloading it."""
         logging.debug("Getting size of %s", url)
 
+        content_length = None
         parsed = urlparse(url)
 
-        if parsed.hostname != "github.com":
-            username = os.getenv("RELEASE_REPO_USER")
-            password = os.getenv("RELEASE_REPO_TOKEN")
-            auth = HTTPBasicAuth(username, password) if username and password else None
-
-            with requests.get(url, allow_redirects=True, auth=auth, stream=True) as response:
+        if parsed.hostname == "repository.hazelcast.com":
+            with requests.get(
+                url,
+                auth=HTTPBasicAuth(
+                    os.getenv("RELEASE_REPO_USER"),
+                    os.getenv("RELEASE_REPO_TOKEN"),
+                ),
+                stream=True,
+                allow_redirects=True,
+            ) as response:
                 response.raise_for_status()
                 content_length = response.headers.get("Content-Length")
-                if content_length:
-                    return naturalsize(int(content_length), format="%.0f")
-        else:
+
+        elif parsed.hostname == "github.com":
             filename = basename(parsed.path)
             repo_full_name = f"{os.getenv('GITHUB_REPOSITORY_OWNER')}/hazelcast"
 
@@ -56,12 +60,18 @@ class DownloadUrl:
                     (
                         asset
                         for release in repo.get_releases()
-                        for asset in release.get_assets() if asset.name == filename
+                        for asset in release.get_assets()
+                        if asset.name == filename
                     ),
                     None,
                 )
                 if asset:
-                    return naturalsize(asset.size, format="%.0f")
+                    content_length = asset.size
+        else:
+            raise Exception(f"Unknown host {parsed.hostname} for {url}")
+
+        if content_length:
+            return naturalsize(int(content_length), format="%.0f")
 
         raise Exception(f"{url} did not return a size")
 
