@@ -1,7 +1,7 @@
 ========== Current Stable
 ---
 Version: 6.0.0
-Date: ${TBC_RELEASE_DATE}
+Date: 10/22/2026
 Download_ZIP_URL: https://github.com/hz-devops-test/hazelcast/releases/download/v6.0.0/hazelcast-6.0.0.zip
 Download_ZIP_Size: 681 MB
 Download_slim_ZIP_URL: https://github.com/hz-devops-test/hazelcast/releases/download/v6.0.0/hazelcast-6.0.0-slim.zip
