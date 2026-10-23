@@ -1,7 +1,7 @@
 ========== Java Client
 ---
 Version: 6.0.0
-Date: ${TBC_RELEASE_DATE}
+Date: 10/23/2026
 Download: https://github.com/hz-devops-test/hazelcast/releases/download/v6.0.0/hazelcast-6.0.0-slim.zip
 Download_Size: 49 MB
 Github: https://github.com/hz-devops-test/hazelcast/tree/v6.0.0
