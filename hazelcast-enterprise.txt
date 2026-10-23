@@ -1,7 +1,7 @@
 ========== Current Stable
 ---
 Version: 6.1.0
-Date: ${TBC_RELEASE_DATE}
+Date: 10/23/2026
 Download_ZIP_URL: https://repository.hazelcast.com/sandbox-files-prod/hazelcast-enterprise/hazelcast-enterprise-6.1.0.zip
 Download_ZIP_Size: 707 MB
 Download_slim_ZIP_URL: https://repository.hazelcast.com/sandbox-files-prod/hazelcast-enterprise/hazelcast-enterprise-6.1.0-slim.zip
